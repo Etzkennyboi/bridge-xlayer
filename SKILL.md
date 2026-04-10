@@ -92,3 +92,30 @@ params:
   - token: token to bridge
   - amount: amount to bridge
   - priority: cheapest|fastest|balanced (default: cheapest)
+
+## CLI & Backend Workarounds
+
+If the native `onchainos bridge` subcommand is unavailable in your environment:
+
+### 1. Manual Contract Call (onchainos CLI)
+The `onchainos` binary (v2.2.8+) uses `--amt` for native value and expects **wei units**.
+```bash
+# Example for bridge send
+onchainos wallet contract-call \
+  --to <OFT_ADDRESS> \
+  --data <HEX_CALLDATA> \
+  --amt <NATIVE_FEE_WEI>
+```
+
+### 2. Calldata Helper
+Use the included helper script to generate calldata for the `onchainos` CLI:
+```bash
+node scripts/calldata.js calldata <src> <dst> USDT0 <amount> <recipient> <refundAddress>
+```
+
+### 3. Local Execution (Non-TEE environments)
+If running outside of an OnChain OS runtime (missing `__TEE_SIGNER__`), use the execution helper:
+```bash
+# Requires PRIVATE_KEY in .env
+node scripts/calldata.js execute <src> <dst> USDT0 <amount> <recipient> <refundAddress>
+```

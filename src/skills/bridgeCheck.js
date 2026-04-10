@@ -29,7 +29,7 @@ class BridgeGuard {
     }
 
     // Fetch balances
-    const provider = getProvider(src.rpc);
+    const provider = getProvider(src.rpc, src.chainId);
     const usdtContract = new ethers.Contract(tokenConfig.token, ERC20_ABI, provider);
 
     const [usdtBalance, nativeBalance] = await Promise.all([

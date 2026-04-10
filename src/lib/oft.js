@@ -19,7 +19,12 @@ const ERC20_ABI = [
   'function decimals() view returns (uint8)',
 ];
 
-const getProvider = (rpcUrl) => new ethers.providers.JsonRpcProvider(rpcUrl);
+const getProvider = (rpcUrl, chainId) => {
+  return new ethers.providers.JsonRpcProvider({
+    url: rpcUrl,
+    skipFetchSetup: true,
+  }, chainId);
+};
 
 const getOFTInterface = () => new ethers.utils.Interface(OFT_ABI);
 
