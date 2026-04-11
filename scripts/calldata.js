@@ -42,9 +42,10 @@ Example:
       console.log('\n--- Bridge Calldata ---');
       console.log('Contract:', quote.srcOFTAddress);
       console.log('Native Value (wei):', quote.nativeFee);
+      const src = getChain(srcChain);
       console.log('Calldata:', calldata);
       console.log('\n--- ONCHAINOS COMMAND ---');
-      console.log(`onchainos wallet contract-call --to ${quote.srcOFTAddress} --data ${calldata} --amt ${quote.nativeFee}`);
+      console.log(`onchainos wallet contract-call --chain ${src.chainId} --to ${quote.srcOFTAddress} --input-data ${calldata} --amt ${quote.nativeFee}`);
     } else if (command === 'execute') {
       require('dotenv').config();
       const pk = process.env.PRIVATE_KEY;

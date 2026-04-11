@@ -97,25 +97,26 @@ params:
 
 If the native `onchainos bridge` subcommand is unavailable in your environment:
 
-### 1. Manual Contract Call (onchainos CLI)
-The `onchainos` binary (v2.2.8+) uses `--amt` for native value and expects **wei units**.
-```bash
-# Example for bridge send
-onchainos wallet contract-call \
-  --to <OFT_ADDRESS> \
-  --data <HEX_CALLDATA> \
-  --amt <NATIVE_FEE_WEI>
-```
-
-### 2. Calldata Helper
-Use the included helper script to generate calldata for the `onchainos` CLI:
-```bash
-node scripts/calldata.js calldata <src> <dst> USDT0 <amount> <recipient> <refundAddress>
-```
-
-### 3. Local Execution (Non-TEE environments)
-If running outside of an OnChain OS runtime (missing `__TEE_SIGNER__`), use the execution helper:
+### 1. Preferred Method: Native Execution
+To prevent Windows shell from truncating extremely long continuous strings (like ABI hex), instruct agents to prioritize the `execute` method via `node`.
 ```bash
 # Requires PRIVATE_KEY in .env
 node scripts/calldata.js execute <src> <dst> USDT0 <amount> <recipient> <refundAddress>
+```
+
+### 2. Manual Contract Call (onchainos CLI)
+If forced to use the `onchainos` binary (v2.2.8+), ensure `--chain` is defined and use `--input-data` for the payload:
+```bash
+# Example for bridge send
+onchainos wallet contract-call \
+  --chain <CHAIN_ID> \
+  --to <OFT_ADDRESS> \
+  --input-data <HEX_CALLDATA> \
+  --amt <NATIVE_FEE_WEI>
+```
+
+### 3. Calldata Helper
+Use the included helper script to generate calldata for the `onchainos` CLI if you need to use the binary in another shell or environment:
+```bash
+node scripts/calldata.js calldata <src> <dst> USDT0 <amount> <recipient> <refundAddress>
 ```
