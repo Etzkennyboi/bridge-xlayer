@@ -5,7 +5,7 @@ const gasEstimator = require('../lib/gasEstimator');
 const approvalCache = require('../lib/approvalCache');
 
 const TOKEN_DECIMALS = 6;
-const SAFETY_USDT_BUFFER = 100000; // 0.1 USDT safety margin (6 decimals)
+const SAFETY_USDT_BUFFER = 10000; // 0.01 USDT safety margin (6 decimals)
 
 class BridgeGuard {
   async check(params) {
@@ -99,7 +99,9 @@ class BridgeGuard {
       amountWei,
       totalNativeNeeded,
       maxAffordable,
+      gasEst,
       src,
+      agentAddress,
     });
 
     return {
@@ -175,7 +177,7 @@ class BridgeGuard {
     };
   }
 
-  buildResponse({ canExecute, usdtBalance, nativeBalance, amountWei, totalNativeNeeded, maxAffordable, src }) {
+  buildResponse({ canExecute, usdtBalance, nativeBalance, amountWei, totalNativeNeeded, maxAffordable, gasEst, src, agentAddress }) {
     if (canExecute) {
       return {
         reason: null,
@@ -205,8 +207,9 @@ class BridgeGuard {
       const shortfall = amountWei.sub(usdtBalance);
       
       // Check if native balance is healthy enough to suggest a swap
-      // (Estimate: needs at least 0.01 Native extra)
-      const canSuggestSwap = nativeBalance.gt(totalNativeNeeded.add(ethers.utils.parseEther('0.01')));
+      // Estimate swap gas (Uniswap V3 swap is ~150k gas)
+      const swapGasEstimate = ethers.BigNumber.from(gasEst.gasPriceWei).mul(150000);
+      const canSuggestSwap = nativeBalance.gt(totalNativeNeeded.add(swapGasEstimate));
 
       return {
         reason: 'INSUFFICIENT_USDT_BALANCE',
@@ -223,7 +226,7 @@ class BridgeGuard {
           `You requested ${requested} USDT0 but only have ${available} USDT0 available`,
           canSuggestSwap 
             ? `Suggested: Swap native assets to ${ethers.utils.formatUnits(shortfall, TOKEN_DECIMALS)} USDT0 using the bridge-swap skill.`
-            : `Suggested: Bridge ${maxAffordable.suggestedAmount} USDT0 instead`,
+            : `Suggested: Bridge ${maxAffordable.suggestedAmount} USDT0 instead (Note: Native balance too low for automatic swap).`,
           'Or deposit more USDT0 to bridge the full amount',
         ],
       };
