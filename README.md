@@ -11,6 +11,10 @@ OnChain OS-compatible skills for AI agents to perform intelligent, cross-chain U
 | `xlayer-bridge-execute` | Transaction builder for TEE-native signing. |
 | `xlayer-bridge-status` | Polling and tracking of cross-chain message delivery. |
 | `xlayer-bridge-route` | Intelligent route selection based on cost, speed, and reliability. |
+| `xlayer-bridge-swap` | **NEW**: Acquires USDT0 via Uniswap V3 when balance is low. |
+
+## Intelligent Remediation
+This skill pack features **Intelligent Remediation**. If `xlayer-bridge-check` detects that your USDT0 balance is insufficient but your Native balance (ETH/MATIC) is healthy, it will provide a structured `remediation` object. This tells the agent to use `xlayer-bridge-swap` to acquire the necessary funds before bridging.
 
 ## Supported Chains
 X Layer, Ethereum, Arbitrum, Optimism, Polygon, and Mantle.

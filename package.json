@@ -1,6 +1,6 @@
 {
   "name": "xlayer-bridge-skills",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "description": "AI Agent USDT0 Omnichain Bridge Skill Pack — Intelligent Guards Edition",
   "main": "src/index.js",
   "scripts": {

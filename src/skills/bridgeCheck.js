@@ -202,11 +202,28 @@ class BridgeGuard {
     if (usdtBalance.lt(amountWei)) {
       const requested = ethers.utils.formatUnits(amountWei, TOKEN_DECIMALS);
       const available = ethers.utils.formatUnits(usdtBalance, TOKEN_DECIMALS);
+      const shortfall = amountWei.sub(usdtBalance);
+      
+      // Check if native balance is healthy enough to suggest a swap
+      // (Estimate: needs at least 0.01 Native extra)
+      const canSuggestSwap = nativeBalance.gt(totalNativeNeeded.add(ethers.utils.parseEther('0.01')));
+
       return {
         reason: 'INSUFFICIENT_USDT_BALANCE',
+        remediation: canSuggestSwap ? {
+          type: 'SWAP_REQUIRED',
+          skill: 'xlayer-bridge-swap',
+          params: {
+            chain: src.name.toLowerCase().replace(' ', ''),
+            amountUsdt: ethers.utils.formatUnits(shortfall, TOKEN_DECIMALS),
+            agentAddress
+          }
+        } : null,
         recommendations: [
           `You requested ${requested} USDT0 but only have ${available} USDT0 available`,
-          `Suggested: Bridge ${maxAffordable.suggestedAmount} USDT0 instead`,
+          canSuggestSwap 
+            ? `Suggested: Swap native assets to ${ethers.utils.formatUnits(shortfall, TOKEN_DECIMALS)} USDT0 using the bridge-swap skill.`
+            : `Suggested: Bridge ${maxAffordable.suggestedAmount} USDT0 instead`,
           'Or deposit more USDT0 to bridge the full amount',
         ],
       };

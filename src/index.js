@@ -5,6 +5,7 @@ const { bridgeQuote } = require('./skills/bridgeQuote');
 const { bridgeExecute } = require('./skills/bridgeExecute');
 const { bridgeStatus } = require('./skills/bridgeStatus');
 const { bridgeRoute } = require('./skills/bridgeRoute');
+const { bridgeSwap } = require('./skills/bridgeSwap');
 const path = require('path');
 
 const app = express();
@@ -63,6 +64,15 @@ app.post('/api/skills/bridge/route', async (req, res) => {
   }
 });
 
+// Skill 5: Native-to-USDT Swap (NEW - for remediation)
+app.post('/api/skills/bridge/swap', async (req, res) => {
+  try {
+    res.json(await bridgeSwap(req.body));
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 // Agent manifest
 app.get('/SKILL.md', (_req, res) => {
   res.sendFile(path.join(__dirname, '../SKILL.md'));
@@ -70,7 +80,7 @@ app.get('/SKILL.md', (_req, res) => {
 
 // Health
 app.get('/health', (_req, res) => {
-  res.json({ status: 'ok', version: '3.0.0', features: ['guard', 'quote', 'execute', 'status', 'route'] });
+  res.json({ status: 'ok', version: '3.1.0', features: ['guard', 'quote', 'execute', 'status', 'route', 'swap'] });
 });
 
 // Global error handler
