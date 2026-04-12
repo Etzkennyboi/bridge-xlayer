@@ -216,10 +216,14 @@ class BridgeGuard {
       const available = ethers.utils.formatUnits(usdtBalance, TOKEN_DECIMALS);
       const shortfall = amountWei.sub(usdtBalance);
       
-      // Check if native balance is healthy enough to suggest a swap
-      // Estimate swap gas (Uniswap V3 swap is ~150k gas)
-      const swapGasEstimate = ethers.BigNumber.from(gasEst.gasPriceWei).mul(150000);
-      const canSuggestSwap = nativeBalance.gt(totalNativeNeeded.add(swapGasEstimate));
+      // We estimate swap gas (Uniswap V3 swap is ~150k gas)
+      const swapGasPrice = gasEst.gasPrice; // We use gasPrice directly from gasEst
+      const swapGasUnits = 150000;
+      const swapGasEstimate = ethers.BigNumber.from(swapGasPrice).mul(swapGasUnits);
+      
+      // Relaxed check: We suggest the swap even if the native balance is tight, 
+      // but only if the user has AT LEAST enough for the swap itself.
+      const canSuggestSwap = nativeBalance.gt(swapGasEstimate);
 
       return {
         reason: 'INSUFFICIENT_USDT_BALANCE',
@@ -235,9 +239,9 @@ class BridgeGuard {
         recommendations: [
           `You requested ${requested} USDT0 but only have ${available} USDT0 available`,
           canSuggestSwap 
-            ? `Suggested: Swap native assets to ${ethers.utils.formatUnits(shortfall, TOKEN_DECIMALS)} USDT0 using the bridge-swap skill.`
-            : `Suggested: Bridge ${maxAffordable.suggestedAmount} USDT0 instead (Note: Native balance too low for automatic swap).`,
-          'Or deposit more USDT0 to bridge the full amount',
+            ? `Action Required: Run bridge-swap to acquire ${ethers.utils.formatUnits(shortfall, TOKEN_DECIMALS)} USDT0. WARNING: Total ETH may be low after the swap.`
+            : `Suggested: Bridge ${maxAffordable.suggestedAmount} USDT0 instead (Note: Native balance too low for swap gas).`,
+          'Alternatively, deposit more USDT0 to bridge the full amount',
         ],
       };
     }
