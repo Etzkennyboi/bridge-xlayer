@@ -1,6 +1,6 @@
 const { ethers } = require('ethers');
 const { getChain } = require('../config/chains');
-const { OFT_ABI, ERC20_ABI, getProvider, buildSendParam } = require('../lib/oft');
+const { OFT_ABI, ERC20_ABI, getProvider, buildSendParam, getOFTInterface } = require('../lib/oft');
 const gasEstimator = require('../lib/gasEstimator');
 const approvalCache = require('../lib/approvalCache');
 
@@ -42,7 +42,8 @@ class BridgeGuard {
     // ── On-chain quote ──────────────────────────────────────────────────────────
     // quoteOFT returns: (OFTLimit limits, OFTFeeDetail[] fees, OFTReceipt receipt)
     //   receipt = { amountSentLD: uint256, amountReceivedLD: uint256 }
-    const oft = new ethers.Contract(tokenConfig.oft, OFT_ABI, provider);
+    const oftInterface = getOFTInterface();
+    const oft = new ethers.Contract(tokenConfig.oft, oftInterface, provider);
     const sendParamInit = buildSendParam(dst.lzEid, recipient, amountWei, 0);
     const [, , oftReceipt] = await oft.callStatic.quoteOFT(sendParamInit);
 
@@ -57,8 +58,17 @@ class BridgeGuard {
     const msgFee    = await oft.callStatic.quoteSend(sendParam, false);
     const nativeFee = msgFee[0]; // native token fee in wei
 
-    // Gas estimation
-    const gasEst = await gasEstimator.estimateGasCost(srcChain, 'send');
+    // Build a simulation object so the estimator can perform a real provider.estimateGas()
+    const simTx = {
+      to: tokenConfig.oft,
+      from: agentAddress,
+      data: oftInterface.encodeFunctionData("send", [sendParam, msgFee, agentAddress]),
+      value: nativeFee
+    };
+
+    // Pass the simulation object to get a real estimate instead of the fallback
+    const gasEst = await gasEstimator.estimateGasCost(srcChain, 'send', simTx);
+
     // Total native needed = LZ fee + execution gas, with a 10% safety margin
     const totalNativeNeeded = ethers.BigNumber.from(nativeFee)
       .add(gasEst.gasCostWei)

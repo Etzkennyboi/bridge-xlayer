@@ -93,6 +93,9 @@ jest.mock('../src/lib/oft', () => {
     })),
     OFT_ABI: [],
     ERC20_ABI: [],
+    getOFTInterface: jest.fn(() => ({
+      encodeFunctionData: jest.fn().mockReturnValue('0x'),
+    })),
     buildSendParam: jest.fn().mockReturnValue([]),
   };
 });

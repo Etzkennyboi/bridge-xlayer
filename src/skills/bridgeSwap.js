@@ -20,11 +20,9 @@ async function bridgeSwap(params) {
   // amountUsdt is human readable (e.g. "1")
   const amountUsdtWei = ethers.utils.parseUnits(amountUsdt, 6); // USDT0 is 6 decimals
 
-  // Rough estimation: 1 USDT is usually < 0.001 ETH
-  // In a real app, we'd use a quoter. Here we set a safe maximum (e.g. 0.05 ETH for 1 USDT is overkill but safe for small swaps)
-  // For the sake of this skill, let's assume a 10% slippage/buffer on whatever the price is.
-  // We'll set maxAmountIn to a value that is likely to succeed.
-  const maxAmountIn = ethers.utils.parseUnits("0.01", 18); // 0.01 ETH max for a small USDT swap
+  // We provide a safe fallback maximum, but UniswapService will now attempt 
+  // to get a precise quote via the Quoter contract and apply a 10% slippage.
+  const maxAmountIn = ethers.utils.parseUnits("0.05", 18); // Increased fallback buffer
 
   const tx = await uniswap.buildSwapNativeForToken({
     chain: chainKey,
