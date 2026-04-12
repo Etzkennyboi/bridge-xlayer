@@ -30,6 +30,15 @@ base_url: https://xlayer-bridge-skills.vercel.app
 1. Call `bridge-route`.
 2. Recommend the `recommendedRoute` to the user, highlighting the `savingsVsAlternative`.
 
+### Pattern 4: Adaptive Remediation (Swap before Bridge)
+**Goal**: Solve "Insufficient Balance" errors automatically.
+1. Call `bridge-check`.
+2. If `canExecute: false` and `remediation.type === "SWAP_REQUIRED"`:
+   - Call `bridge-swap` with `params` from the remediation object.
+   - Inform user: "You need more USDT0. I can swap some of your native tokens to cover it. Proceed?"
+   - Sign/broadcast swap -> Wait for confirmation.
+   - Re-run `bridge-check`.
+
 ## Skills
 
 ### bridge-check
@@ -48,6 +57,7 @@ params:
   - agentAddress: string (agent's wallet address)
 returns:
   - canExecute: boolean
+  - remediation: { type: "SWAP_REQUIRED", skill: "bridge-swap", params: { ... } } | null
   - maxAffordable: { suggestedAmount, maxPossible, limitingFactor }
   - requirements: { usdtNeeded, nativeFee, gasEstimate, totalNativeNeeded }
   - quote: full quote data (pass to bridge-execute)
@@ -92,6 +102,17 @@ params:
   - token: token to bridge
   - amount: amount to bridge
   - priority: cheapest|fastest|balanced (default: cheapest)
+
+### bridge-swap
+endpoint: POST /api/skills/bridge/swap
+auth: none
+description: >
+  Acquire USDT0 via DEX (Uniswap V3) on the source chain.
+  Typically called when bridge-check returns a SWAP_REQUIRED remediation.
+params:
+  - chain: string
+  - amountUsdt: string (human readable)
+  - agentAddress: string
 
 ## CLI & Backend Workarounds
 

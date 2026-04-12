@@ -26,6 +26,7 @@ Pre-execution guard that validates all requirements before a bridge operation. T
 ### Response
 Returns a JSON object containing:
 - `canExecute`: Boolean indicating if the bridge can proceed.
+- `remediation`: Optional remediation object (e.g., `SWAP_REQUIRED`) if balance is low.
 - `maxAffordable`: Adaptive amount suggestions (`suggestedAmount`, `maxPossible`).
 - `requirements`: Breakdown of native token and bridge token costs.
 - `quote`: Encapsulated quote data for the execute step.
