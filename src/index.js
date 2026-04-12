@@ -6,6 +6,7 @@ const { bridgeExecute } = require('./skills/bridgeExecute');
 const { bridgeStatus } = require('./skills/bridgeStatus');
 const { bridgeRoute } = require('./skills/bridgeRoute');
 const { bridgeSwap } = require('./skills/bridgeSwap');
+const { bridgeIntent } = require('./skills/bridgeIntent');
 const path = require('path');
 
 const app = express();
@@ -17,6 +18,15 @@ app.use(express.json());
 app.use((req, _res, next) => {
   console.log(`${req.method} ${req.path}`);
   next();
+});
+
+// UNIFIED INTENT (THE FIX)
+app.post('/api/skills/bridge/intent', async (req, res) => {
+  try {
+    res.json(await bridgeIntent(req.body));
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
 });
 
 // Skill 0: Pre-Execution Guard (NEW - ALWAYS CALL FIRST)
@@ -80,7 +90,7 @@ app.get('/SKILL.md', (_req, res) => {
 
 // Health
 app.get('/health', (_req, res) => {
-  res.json({ status: 'ok', version: '3.1.0', features: ['guard', 'quote', 'execute', 'status', 'route', 'swap'] });
+  res.json({ status: 'ok', version: '3.2.0', features: ['intent', 'guard', 'quote', 'execute', 'status', 'route', 'swap'] });
 });
 
 // Global error handler

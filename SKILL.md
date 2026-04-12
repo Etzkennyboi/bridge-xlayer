@@ -5,49 +5,31 @@ base_url: https://xlayer-bridge-skills.vercel.app
 
 ## Agent Intelligence Patterns
 
-### Pattern 1: Safe Pre-flight (MANDATORY)
-**Goal**: Avoid wasting gas or entering a stuck state due to insufficient funds.
-1. Call `bridge-check`.
-2. Inspect `canExecute`.
-3. If `false`:
-   - Inspect `maxAffordable.suggestedAmount`.
-   - Ask user: "I can only bridge {{suggestedAmount}} currently due to {{limitingFactor}}. Should I proceed with the lower amount?"
-4. If `true`: Proceed to execution.
+### Pattern 1: Unified Bridge Execution (MANDATORY)
+**Goal**: Handle all checks, remediation swaps, approvals, and bridging in one shot without agent logic errors.
+1. Call `bridge-intent`.
+2. Inspect the returned target `transactions` array.
+3. If `status` is `READY`:
+   - Iterate through `res.transactions` in order:
+     - Call `runtime.callContractSign(tx.tx)`.
+     - Wait for on-chain confirmation before moving to the next.
+4. If an error is returned (e.g. `INSUFFICIENT_NATIVE_BALANCE`):
+   - Ask the user to fund their wallet or suggest the max possible bridge amount if one is provided in the error message.
 
-### Pattern 2: Multi-Step Execution (Ethereum Only)
-**Goal**: Handle the ERC20 approve requirement.
-1. Call `bridge-execute` with `approvalDone: false`.
-2. If response has `step: "approve"`:
-   - Call `runtime.callContractSign(res.tx)`.
-   - Wait for on-chain confirmation.
-   - Re-call `bridge-execute` with `approvalDone: true`.
-3. If response has `step: "send"`:
-   - Call `runtime.callContractSign(res.tx)`.
-   - Start polling `bridge-status`.
-
-### Pattern 3: Adaptive Routing
+### Pattern 2: Adaptive Routing
 **Goal**: Save user funds by picking the cheapest chain.
 1. Call `bridge-route`.
 2. Recommend the `recommendedRoute` to the user, highlighting the `savingsVsAlternative`.
 
-### Pattern 4: Adaptive Remediation (Swap before Bridge)
-**Goal**: Solve "Insufficient Balance" errors automatically.
-1. Call `bridge-check`.
-2. If `canExecute: false` and `remediation.type === "SWAP_REQUIRED"`:
-   - Call `bridge-swap` with `params` from the remediation object.
-   - Inform user: "You need more USDT0. I can swap some of your native tokens to cover it. Proceed?"
-   - Sign/broadcast swap -> Wait for confirmation.
-   - Re-run `bridge-check`.
-
 ## Skills
 
-### bridge-check
-endpoint: POST /api/skills/bridge/check
+### bridge-intent
+endpoint: POST /api/skills/bridge/intent
 auth: none
 description: >
-  CRITICAL: ALWAYS call this first before any bridge operation.
-  Validates balances, estimates total costs, returns max affordable amount.
-  Prevents failed transactions and wasted gas.
+  UNIFIED ENDPOINT: Call this when the user wants to bridge.
+  Automatically checks balances, acquires USDT0 via swap if necessary, builds the 
+  ERC20 approve tx, and builds the LayerZero bridge tx.
 params:
   - srcChain: xlayer|ethereum|arbitrum|polygon|optimism|mantle
   - dstChain: (same options)
@@ -55,12 +37,12 @@ params:
   - amount: string (human-readable, e.g. "100")
   - recipient: string (0x address on destination)
   - agentAddress: string (agent's wallet address)
+  - refundAddress: string (agent's wallet address or user)
 returns:
-  - canExecute: boolean
-  - remediation: { type: "SWAP_REQUIRED", skill: "bridge-swap", params: { ... } } | null
-  - maxAffordable: { suggestedAmount, maxPossible, limitingFactor }
-  - requirements: { usdtNeeded, nativeFee, gasEstimate, totalNativeNeeded }
-  - quote: full quote data (pass to bridge-execute)
+  - skill: string
+  - status: "READY"
+  - message: instructions for the agent
+  - transactions: array of { type: string, description: string, tx: object } to be signed in order.
 
 ### bridge-execute
 endpoint: POST /api/skills/bridge/execute
